@@ -1,0 +1,6 @@
+google-adk
+python-dotenv
+mcp
+google-cloud-firestore
+flask
+flask-cors

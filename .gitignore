@@ -1,0 +1,24 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# Environment — never commit secrets
+.env
+.env.*
+
+# Frontend build artifacts and deps
+frontend/node_modules/
+frontend/dist/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Agent old version
+agent-old.py
