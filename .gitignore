@@ -13,6 +13,8 @@ __pycache__/
 frontend/node_modules/
 frontend/dist/
 
+# Docker build cache
+
 # macOS
 .DS_Store
 

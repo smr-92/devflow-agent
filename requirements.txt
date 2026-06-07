@@ -4,3 +4,4 @@ mcp
 google-cloud-firestore
 flask
 flask-cors
+gunicorn

@@ -1,7 +1,7 @@
 import asyncio
 import os
 import threading
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from google.cloud import firestore
 from dotenv import load_dotenv
@@ -126,5 +126,18 @@ def gitlab_webhook():
     return jsonify({"status": "ignored", "kind": kind, "action": action}), 200
 
 
+# ── Serve React frontend (catch-all) ──────────────────────────────────────────
+
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "frontend", "dist")
+
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_frontend(path):
+    if path and os.path.exists(os.path.join(FRONTEND_DIR, path)):
+        return send_from_directory(FRONTEND_DIR, path)
+    return send_from_directory(FRONTEND_DIR, "index.html")
+
+
 if __name__ == "__main__":
-    app.run(debug=True, port=8080, use_reloader=False)
+    port = int(os.getenv("PORT", 8080))
+    app.run(host="0.0.0.0", port=port, debug=False)
