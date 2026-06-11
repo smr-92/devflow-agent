@@ -94,14 +94,18 @@ def get_leaderboard(limit: int = 10) -> list:
 
 # ── MCP toolset ───────────────────────────────────────────────────────────────
 
+_MCP_CMD = "mcp-gitlab" if os.path.exists("/usr/local/bin/mcp-gitlab") else "npx"
+_MCP_ARGS = [] if _MCP_CMD == "mcp-gitlab" else ["-y", "@zereight/mcp-gitlab@2.1.18"]
+
 gitlab_mcp = McpToolset(
     connection_params=StdioConnectionParams(
         server_params=StdioServerParameters(
-            command="npx",
-            args=["-y", "@zereight/mcp-gitlab"],
+            command=_MCP_CMD,
+            args=_MCP_ARGS,
             env={
                 "GITLAB_PERSONAL_ACCESS_TOKEN": os.getenv("GITLAB_TOKEN"),
                 "GITLAB_API_URL": f"{os.getenv('GITLAB_URL')}/api/v4",
+                "PATH": "/usr/local/bin:/usr/bin:/bin",
             },
         )
     )

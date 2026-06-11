@@ -21,14 +21,14 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-install MCP server globally so npx uses cache (avoids cold-start download)
-RUN npm install -g @zereight/mcp-gitlab
+# Pin exact version — prevents runtime version drift between builds
+RUN npm install -g @zereight/mcp-gitlab@2.1.18
 
 # Frontend build output from stage 1
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
 # Python source
-COPY agent.py api.py digest.py stale.py score_batch.py ./
+COPY agent.py api.py worker.py digest.py stale.py score_batch.py ./
 
 ENV PORT=8080
 EXPOSE 8080

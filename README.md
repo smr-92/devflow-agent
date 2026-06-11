@@ -4,6 +4,8 @@
 
 Built for the **Google Cloud Rapid Agent Hackathon** (GitLab Partner Track) using Google Cloud Agent Builder, Gemini 2.5 Flash, and the GitLab MCP server.
 
+**Live demo:** https://devflow-api-474589882332.us-central1.run.app
+
 ---
 
 ## What It Does
@@ -94,9 +96,11 @@ GitLab MCP Server              Firestore
 devflow-agent/
 ├── agent.py          # Core ADK agent — scoring, triage, stale detection, digest
 ├── api.py            # Flask server — REST API + GitLab webhook handler
+├── worker.py         # Subprocess worker — runs agent for webhook events (Cloud Run safe)
 ├── stale.py          # CLI script — scan and notify stale MRs
 ├── digest.py         # CLI script — generate daily team digest
 ├── score_batch.py    # CLI script — batch score multiple MRs
+├── Dockerfile        # Multi-stage build: Node.js 20 + Python 3.11
 ├── requirements.txt  # Python dependencies
 └── frontend/
     └── src/

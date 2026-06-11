@@ -1,4 +1,3 @@
-import asyncio
 import os
 import threading
 from flask import Flask, jsonify, request, send_from_directory
@@ -48,33 +47,19 @@ def scores(username):
 
 # ── Webhook ───────────────────────────────────────────────────────────────────
 
-def _run_agent_in_background(user_id: str, prompt: str, tag: str) -> None:
-    """Spin up a fresh event loop in a daemon thread to run the agent."""
-    from google.adk.runners import Runner
-    from google.adk.sessions import InMemorySessionService
-    from google.genai import types
-    from agent import agent
-
-    async def _run():
-        session_service = InMemorySessionService()
-        session = await session_service.create_session(app_name="devflow", user_id=user_id)
-        runner = Runner(agent=agent, app_name="devflow", session_service=session_service)
-        async for event in runner.run_async(
-            user_id=user_id,
-            session_id=session.id,
-            new_message=types.Content(role="user", parts=[types.Part(text=prompt)])
-        ):
-            if hasattr(event, "content") and event.content and event.content.parts:
-                for part in event.content.parts:
-                    if hasattr(part, "text") and part.text:
-                        print(f"[{tag}] {part.text[:140]}")
-
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(_run())
-    finally:
-        loop.close()
+def _run_worker(prompt: str, tag: str) -> None:
+    """Run worker.py as a subprocess with a prompt string."""
+    import subprocess, sys
+    worker = os.path.join(os.path.dirname(__file__), "worker.py")
+    proc = subprocess.Popen(
+        [sys.executable, worker, prompt],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+    )
+    for line in proc.stdout:
+        print(f"[{tag}] {line.rstrip()[:160]}", flush=True)
+    proc.wait()
+    if proc.returncode != 0:
+        print(f"[{tag}] worker exited with code {proc.returncode}", flush=True)
 
 
 @app.route("/webhook", methods=["POST"])
@@ -99,25 +84,25 @@ def gitlab_webhook():
         )
         print(f"[webhook] MR opened — scoring {project_id} !{mr_iid}")
         t = threading.Thread(
-            target=_run_agent_in_background,
-            args=("webhook_mr", prompt, f"MR!{mr_iid}"),
+            target=_run_worker,
+            args=(prompt, f"MR!{mr_iid}"),
             daemon=True,
         )
         t.start()
         return jsonify({"status": "scoring triggered", "project": project_id, "mr_iid": mr_iid}), 202
 
-    # ── Issue opened → auto-triage ────────────────────────────────────────────
-    if kind == "issue" and action == "open":
-        project_id  = payload["project"]["path_with_namespace"]
-        issue_iid   = attrs["iid"]
+    # ── Issue / Work Item opened → auto-triage ───────────────────────────────
+    if kind in ("issue", "work_item") and action == "open":
+        project_id = payload["project"]["path_with_namespace"]
+        issue_iid  = attrs.get("iid") or attrs.get("id")
         prompt = (
             f"Triage issue #{issue_iid} in project {project_id}. "
             f"Apply appropriate labels and post a triage comment."
         )
         print(f"[webhook] Issue opened — triaging {project_id} #{issue_iid}")
         t = threading.Thread(
-            target=_run_agent_in_background,
-            args=("webhook_issue", prompt, f"Issue#{issue_iid}"),
+            target=_run_worker,
+            args=(prompt, f"Issue#{issue_iid}"),
             daemon=True,
         )
         t.start()
